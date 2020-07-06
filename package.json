@@ -1,0 +1,27 @@
+{
+  "name": "memcached",
+  "version": "1.0.0",
+  "description": "Taller para Moove-it memcache",
+  "main": "server.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node server.js",
+    "test:watch": "jest --watch"
+  },
+  "keywords": [
+    "memcache",
+    "nodejs"
+  ],
+  "author": "Facundo Torterola",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/preset-env": "^7.10.2",
+    "babel-jest": "^26.0.1",
+    "babel-polyfill": "^6.26.0",
+    "jest": "^26.1.0"
+  },
+  "dependencies": {
+    "jest-cli": "^26.1.0",
+    "package.json": "^2.0.1"
+  }
+}
