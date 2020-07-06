@@ -1,6 +1,6 @@
 const net = require("net");
 const memcached = require('./memcached');
-const port = 8007;
+const port = 8010;
 
 const Request = require('./Request');
 // Storage commands

@@ -1,5 +1,5 @@
 const client = require("../client");
-const port = 8007;
+const port = 8010;
 
 describe("Testing set", ()=>{  
 
