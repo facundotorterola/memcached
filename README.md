@@ -44,7 +44,7 @@ exp_time: es cuantos segundos estará almacenada en la caché
 bytes:Es la cantidad de bytes que tiene data sin incluir el \r\n
 data: Es la información a guardar en la caché.
 
-## 4.1Comandos de obtención:
+## 4.1 Comandos de obtención:
 
 El formato para enviar los comandos de obtención es el siguiente.
 
