@@ -5,8 +5,8 @@
   "main": "server.js",
   "scripts": {
     "test": "jest",
-    "start": "node server.js",
-    "test:watch": "jest --watch"
+   
+    "start": "node server.js"
   },
   "keywords": [
     "memcache",
