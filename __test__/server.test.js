@@ -5,6 +5,7 @@ function getCasValue(str) {
     const header = lines[0];
     return header.split(" ")[4];
 }
+
 describe('Testing set', ()=>{  
 
     test('Setting a key', ()=>{
@@ -251,7 +252,7 @@ describe('Testing get',  ()=>{
 
     });
 
-    test('Get the value of more than one key', ()=>{
+    test('Get the value of key which is not stored', ()=>{
         client.init(PORT).then(async clientSocket=>{
             let cmd='get testing_get_not_stored\r\n';
             let response = await client.send(clientSocket,cmd);
@@ -261,42 +262,28 @@ describe('Testing get',  ()=>{
             
     });
 });
-// describe('Testing gets',  ()=>{  
-//     test('Gets the value of a key', ()=>{
-//         client.init(PORT).then(async clientSocket=>{
-//             await client.send(clientSocket,'set testing_gets 0 20 4\r\ntest\r\n');
-//             await client.send(clientSocket,'cas testing_gets 0 20 4 cas_gets\r\ntest\r\n');
+describe('Testing gets',  ()=>{  
 
-//             let cmd='gets testing_gets \r\n';
-//             let reply ='VALUE testing_gets 0 4 cas_gets\r\ntest\r\nEND\r\n'
-//             let response = await client.send(clientSocket,cmd);
-//             await client.close(clientSocket); 
-//             expect(response).toBe(reply);
-//         });
-//     }); 
-//     test('Gets the value of more than one key', ()=>{
-//         client.init(PORT).then(async clientSocket=>{
-//             await client.send(clientSocket,'set testing_gets1 0 20 5\r\ntest1\r\n');
-//             await client.send(clientSocket,'cas testing_gets1 0 20 5 cas_mto_gets1\r\ntest1\r\n');
-
-//             await client.send(clientSocket,'set testing_gets2 0 20 5\r\ntest2\r\n');
-//             await client.send(clientSocket,'cas testing_gets2 0 20 5 cas_mto_gets2\r\ntest2\r\n');
-
-//             let cmd='gets testing_gets1 testing_gets2\r\n';
-//             let reply ='VALUE testing_gets1 0 5 cas_mto_gets1\r\ntest1\r\nEND\r\n';
-//             reply+='VALUE testing_gets2 0 5 cas_mto_gets2\r\ntest2\r\nEND\r\n';
-//             let response = await client.send(clientSocket,cmd);
-//             await client.close(clientSocket); 
-//             expect(response).toStrictEqual(reply);
-//         });
-        
-//     });
-//     test('Gets the value of more than one key', ()=>{
-//         client.init(PORT).then(async clientSocket=>{
-//             let cmd='gets testing_get_not_stored\r\n';
-//             let response = await client.send(clientSocket,cmd);
-//             await client.close(clientSocket); 
-//             expect(response).toStrictEqual('\r\n');
-//         });
-//     });
-// });
+    test('Gets the value of a key', ()=>{
+        client.init(PORT).then(async clientSocket=>{
+            await client.send(clientSocket,'set testing_gets 0 200 4\r\ntest\r\n');
+            const response_cas = client.send(clientSocket,'gets testing_gets\r\n');
+            const cas = getCasValue(response_cas);
+            let reply =`VALUE testing_gets 0 4 ${cas}\r\ntest\r\nEND\r\n`;
+            const cmd = 'gets testing_gets\r\n';
+            let response = await client.send(clientSocket,cmd);
+            await client.close(clientSocket); 
+            expect(response).toBe(reply)
+           
+        });
+    }); 
+   
+    test('Gets the value of key which is not stored', ()=>{
+        client.init(PORT).then(async clientSocket=>{
+            let cmd='gets testing_get_not_stored\r\n';
+            let response = await client.send(clientSocket,cmd);
+            await client.close(clientSocket); 
+            expect(response).toStrictEqual('\r\n');
+        });
+    });
+});

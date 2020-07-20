@@ -1,18 +1,17 @@
 const net = require('net');
 
 // const memcached = require('./memcached');
-const Memcached =require('./Memcached');
-const memcached = new  Memcached(); 
+const memcached =require('./classes/memcached');
+// const memcached = new  Memcached(); 
 const PORT = 8010;
 
-const Request = require('./Request');
+const Request = require('./classes/request');
 // Storage commands
 const STORAGE_COMMANDS=['append','set','replace','add','prepend','cas'];
 // Get commands 
 const GET_COMMANDS = ['get','gets'];
 
 let clients={};
-let CAS_UNIQUE=0;
 const server = net.createServer( (socket) => {
 
     console.log(socket.remoteAddress);
@@ -31,7 +30,9 @@ const server = net.createServer( (socket) => {
     
     socket.on('data',async (data)=> {
         let frame = data.toString();        
-        const COMMANDS = frame.split('\r\n').filter((element) => element.length>0);
+        // const COMMANDS = frame.split('\r\n').filter((element) => element.length>0);
+        const COMMANDS = frame.split('\r\n');
+        COMMANDS.pop();
         console.log('COMMANDS');
         console.log(COMMANDS);
         for (let i = 0; i < COMMANDS.length; i++) {
@@ -53,11 +54,7 @@ const server = net.createServer( (socket) => {
                                 socket.write(response);
                             }
                         }).catch(error=>{
-                            if(request.no_reply===1){
-                                socket.write('\r\n');
-                            }else{
-                                socket.write(error);
-                            }
+                            socket.write(error.message);
                         });
                 } catch (error) {
                     socket.write(error.message);
@@ -71,31 +68,30 @@ const server = net.createServer( (socket) => {
                     
                     if(command.length===6){
                         try {
-                            request = new Request(command[0],command[1],parseInt(command[2]),parseInt(command[3]),parseInt(command[4]),CAS_UNIQUE,1)
+                            request = new Request(command[0],command[1],parseInt(command[2]),parseInt(command[3]),parseInt(command[4]),1)
                         } catch (error) {
                             socket.write(error.message);
                         }
                     }else if (command.length===5){
                         try {
-                            request = new Request(command[0],command[1],parseInt(command[2]),parseInt(command[3]),parseInt(command[4]),CAS_UNIQUE,0)
+                            request = new Request(command[0],command[1],parseInt(command[2]),parseInt(command[3]),parseInt(command[4]),0)
                         } catch (error) {
                             socket.write(error.message);
                         }
                     }else{
                         socket.write('CLIENT_ERROR header bad formed\r\nERROR\r\n');
                     }
-                    CAS_UNIQUE++;
                 }else{
                     if(command.length===7){
                         try {
-                            request = new Request(command[0],command[1],parseInt(command[2]),parseInt(command[3]),parseInt(command[4]),parseInt(command[5]),1);
+                            request = new Request(command[0],command[1],parseInt(command[2]),parseInt(command[3]),parseInt(command[4]),1,parseInt(command[5]));
                         } catch (error) {
                             console.log(error);
                             socket.write(error.message);
                         }
                     }else if (command.length===6){
                         try {
-                            request = new Request(command[0],command[1],parseInt(command[2]),parseInt(command[3]),parseInt(command[4]),parseInt(command[5]),0);
+                            request = new Request(command[0],command[1],parseInt(command[2]),parseInt(command[3]),parseInt(command[4]),0,parseInt(command[5]));
                         } catch (error) {
                             socket.write(error.message);
                         }
@@ -104,8 +100,6 @@ const server = net.createServer( (socket) => {
                     }
                 }
                 if(request){
-                    // Cas
-                    request.setClient(id_client);                    
                     clients[id_client]['request']=request;
                 }
             }
@@ -140,7 +134,7 @@ const server = net.createServer( (socket) => {
 })
 server.listen(PORT,()=>{
     console.log(`server is listening on port ${PORT}`);
-})
+});
 server.setMaxListeners(50);
 setInterval( ()=> {
     memcached.removeKeysExpired(new Date().getTime())

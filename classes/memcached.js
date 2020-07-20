@@ -1,7 +1,16 @@
 class Memcached{
     constructor(){
-        this.store={};
+        if (!Memcached.instance){
+            this.store={};
+            this.cas_unique={
+                'id':0
+            };
+            Memcached.instance=this;
+        }
+        return Memcached.instance;
+        
     };
+    
     requestHandler(request) {
         let response;
         switch (request.command) {
@@ -27,7 +36,8 @@ class Memcached{
             default:
                 break;
         }
-        return response
+       
+        return response;        
     };
     // GET
     getKeyValue(key){
@@ -43,6 +53,7 @@ class Memcached{
     getMulKeysValues(keys) {    
         return new Promise((resolve,reject)=>{
             let values = [];
+
             for (let i = 0; i < keys.length; i++) {
                 const element = keys[i];        
                 if (this.store[element]) {
@@ -63,10 +74,12 @@ class Memcached{
     addKey(request) {
         return new Promise((resolve,reject)=>{
             if (!this.store[request.key]) {
+                request.setCas(this.cas_unique.id);
+                this.cas_unique.id++;
                 this.store[request.key]=request;
                 resolve('STORED\r\n');
             }else{
-                reject('NOT_STORED\r\n');
+                reject(new Error('NOT_STORED\r\n'));
             }  
         })
          
@@ -75,10 +88,12 @@ class Memcached{
     replaceKey(request) {    
         return new Promise((resolve,reject)=>{
             if (this.store[request.key]) {
+                request.setCas(this.cas_unique.id);
+                this.cas_unique.id++;
                 this.store[request.key]=request;
                 resolve('STORED\r\n');
             }else{
-                reject('NOT_STORED\r\n');
+                reject(new Error('NOT_STORED\r\n'));
             }  
         })    
     }
@@ -88,10 +103,9 @@ class Memcached{
         return new Promise((resolve,reject)=>{
             if (this.store[request.key]) {
                 this.store[request.key].appendValue(request.value);
-                this.store[request.key].setClient(request.client);
                 resolve('STORED\r\n');
             }else{
-                reject('NOT_STORED\r\n');
+                reject(new Error('NOT_STORED\r\n'));
             }  
     
         }) 
@@ -102,16 +116,17 @@ class Memcached{
         return new Promise((resolve,reject)=>{
             if (this.store[request.key]) {
                 this.store[request.key].prependValue(request.value);
-                this.store[request.key].setClient(request.client);
                 resolve('STORED\r\n');
             }else{
-                reject('NOT_STORED\r\n');
+                reject(new Error('NOT_STORED\r\n'));
             }    
         })
         
     }
     setKey(request) {
         return new Promise((resolve,reject)=>{
+            request.setCas(this.cas_unique.id);
+            this.cas_unique.id++;
             this.store[request.key]=request;
             resolve('STORED\r\n');
         });
@@ -121,15 +136,14 @@ class Memcached{
         return new Promise((resolve,reject)=>{
             if (this.store[request.key]) {
                 
-                if(this.store[request.key].client === request.client 
-                    && this.store[request.key].cas_unique === request.cas_unique){
+                if(this.store[request.key].cas_unique === request.cas_unique){
                     this.store[request.key]=request;
                     resolve('EXISTS\r\n');
                 }else{
-                    reject('ERROR\r\n');
+                    reject(new Error('ERROR\r\n'));
                 }
             }else{
-                reject('NOT_FOUND\r\n');
+                reject(new Error('NOT_FOUND\r\n'));
             }
         })
         
@@ -153,5 +167,8 @@ class Memcached{
     }
     
 }
+const instance = new Memcached();
+Object.freeze(instance);
 
-module.exports=Memcached
+
+module.exports=instance;

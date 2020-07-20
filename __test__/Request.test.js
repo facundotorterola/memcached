@@ -1,5 +1,5 @@
 
-const Request = require('../Request');
+const Request = require('../classes/request');
 
 describe('Testing create Request',()=>{
   

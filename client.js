@@ -17,7 +17,12 @@ function  initClient(port) {
 function closeClientConnection(clientSocket) {
     return new Promise((resolve,reject)=>{
         let end = clientSocket.destroy();
-        resolve(end);
+        clientSocket.on('close',()=>{
+            resolve(end);
+        });
+        clientSocket.on('error',(error)=>{
+            reject(error);
+        });
     });  
 }
 
@@ -33,7 +38,7 @@ function sendData(clientSocket,request){
         });
     })
 }
-// Recceive Data from the server 
+// Receive Data from the server 
 function receiveData(clientSocket) {
     return new Promise((resolve,reject)=>{
         clientSocket.on('data',function (data) {
