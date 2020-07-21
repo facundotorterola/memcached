@@ -61,7 +61,7 @@ data\r\n***
 
 **bytes**:Es la cantidad de bytes que tiene data sin incluir el \r\n
 
-**[no_reply](Opcional)**: Se utiliza si no queremos recibir una respuesta 
+**[no_reply]**: (Opcional) Se utiliza si no queremos recibir una respuesta 
 
 En caso que el comando a ejecutar sea **cas** el formato es el siguiente
 
