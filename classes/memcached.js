@@ -1,14 +1,15 @@
 class Memcached{
+    // Singleton Constructor
     constructor(){
-        if (!Memcached.instance){
-            this.store={};
-            this.cas_unique={
-                'id':0
-            };
-            Memcached.instance=this;
+        if (Memcached.instance instanceof Memcached){
+            return Memcached.instance;
         }
-        return Memcached.instance;
-        
+        this.store={};
+        this.cas_unique={
+            'id':0
+        };
+        Memcached.instance=this;
+        Object.freeze(this);
     };
     
     requestHandler(request) {
@@ -39,7 +40,7 @@ class Memcached{
        
         return response;        
     };
-    // GET
+    // Retrieve Commands
     getKeyValue(key){
         return new Promise((resolve,reject)=>{
             if(this.store[key]){
@@ -69,7 +70,7 @@ class Memcached{
         })
     };
     
-    // Storage
+    // Storage Commands
     // store this data, but only if the server *doesn't* already hold data for this key 
     addKey(request) {
         return new Promise((resolve,reject)=>{
@@ -123,6 +124,7 @@ class Memcached{
         })
         
     }
+    // Store data
     setKey(request) {
         return new Promise((resolve,reject)=>{
             request.setCas(this.cas_unique.id);
@@ -162,13 +164,8 @@ class Memcached{
                 }
             }
             resolve(removed);   
-        });
-        
+        });   
     }
-    
 }
-const instance = new Memcached();
-Object.freeze(instance);
 
-
-module.exports=instance;
+module.exports=Memcached;

@@ -1,8 +1,7 @@
 const net = require('net');
 
-// const memcached = require('./memcached');
-const memcached =require('./classes/memcached');
-// const memcached = new  Memcached(); 
+const Memcached =require('./classes/memcached');
+const memcached = new  Memcached(); 
 const PORT = 8010;
 
 const Request = require('./classes/request');
@@ -13,36 +12,31 @@ const GET_COMMANDS = ['get','gets'];
 
 let clients={};
 const server = net.createServer( (socket) => {
-
-    console.log(socket.remoteAddress);
-    
-    console.log(socket.remotePort);
-    let id_client = `${socket.remoteAddress} : ${socket.remotePort.toString()}`;
-    clients[id_client] = {
-        'address':socket.remoteAddress,
-        'port':socket.remotePort
+    const ID_CLIENT = `${socket.remoteAddress} : ${socket.remotePort.toString()}`;
+    console.log(`NEW CONNECTION OF CLIENT : ${ID_CLIENT}`);
+    clients[ID_CLIENT]={
+        'port':socket.remotePort.toString(),
+        'address':socket.remoteAddress
     }
-    socket.on('error',(error)=>{
-        console.log('ERROR');
-        
-        console.error(error);
-    })
-    
+
     socket.on('data',async (data)=> {
+        // Frame received
+       
         let frame = data.toString();        
-        // const COMMANDS = frame.split('\r\n').filter((element) => element.length>0);
         const COMMANDS = frame.split('\r\n');
         COMMANDS.pop();
         console.log('COMMANDS');
         console.log(COMMANDS);
         for (let i = 0; i < COMMANDS.length; i++) {
+            
             let message=COMMANDS[i];
             console.log(message);
             let command = message.split(' ').filter((element) => element.length>0);
             console.log(command);
             let request;
-            if(clients[id_client].request){
-                request = clients[id_client].request;
+            // Check if the client has a request
+            if(clients[ID_CLIENT].request){
+                request = clients[ID_CLIENT].request;
                 try {
                     request.setValue(message);
                     console.log(request);
@@ -59,7 +53,7 @@ const server = net.createServer( (socket) => {
                 } catch (error) {
                     socket.write(error.message);
                 }
-                delete clients[id_client].request;
+                delete clients[ID_CLIENT].request;
             } 
             // Storage Commands
             else if (STORAGE_COMMANDS.indexOf(command[0])>=0){
@@ -79,7 +73,7 @@ const server = net.createServer( (socket) => {
                             socket.write(error.message);
                         }
                     }else{
-                        socket.write('CLIENT_ERROR header bad formed\r\nERROR\r\n');
+                        socket.write('CLIENT_ERROR header malformed\r\nERROR\r\n');
                     }
                 }else{
                     if(command.length===7){
@@ -96,32 +90,44 @@ const server = net.createServer( (socket) => {
                             socket.write(error.message);
                         }
                     }else{
-                        socket.write('CLIENT_ERROR header bad formed\r\nERROR\r\n');
+                        socket.write('CLIENT_ERROR header malformed\r\nERROR\r\n');
                     }
                 }
                 if(request){
-                    clients[id_client]['request']=request;
+                    // Store client request
+                    clients[ID_CLIENT]['request']=request;
                 }
             }
             // GET COMMANDS
             else if (GET_COMMANDS.indexOf(command[0])>=0){
                 let keys = message.split(' ').filter((element) => element.length>0);
                 keys.shift();
-                memcached.getMulKeysValues(keys)
+                if (keys.length===1) {
+                    memcached.getKeyValue(keys[0]).then(data=>{
+                        if (command[0]==='get') {
+                            socket.write(data.stringGetRequest());
+                        }else{
+                            socket.write(data.stringGetsRequest());
+                        }                        
+                    }).catch(err=>socket.write('\r\n'))
+        
+                }else{
+                    memcached.getMulKeysValues(keys)
                         .then(data=>{
-                            console.log(data);
                             let response='';
                             for (let i = 0; i < data.length; i++) {
                                 const element = data[i];
                                 if (command[0]==='get') {
-                                    response+=`VALUE ${element.key} ${element.flags} ${element.bytes}\r\n${element.value}\r\nEND\r\n`;
+                                    response+=element.stringGetRequest();
                                 }else{
-                                    response+=`VALUE ${element.key} ${element.flags} ${element.bytes} ${element.cas_unique}\r\n${element.value}\r\nEND\r\n`;
+                                    response+=element.stringGetsRequest();
                                 }                               
                             }
                             socket.write(response);
                         })
                         .catch(err=>socket.write('\r\n'))
+                }
+                
             }else{
                 socket.write('ERROR\r\n');
             }
@@ -129,13 +135,22 @@ const server = net.createServer( (socket) => {
     })
     socket.on('close',function () {
         console.log(`CONNECTION CLOSE BY address ${socket.remoteAddress} PORT ${socket.remotePort}`);
-        delete clients[id_client];
-    })
-})
+        delete clients[ID_CLIENT];
+    });
+
+    socket.on('error',(error)=>{
+        console.log('ERROR');
+        console.error(error);
+    });
+    
+});
 server.listen(PORT,()=>{
     console.log(`server is listening on port ${PORT}`);
 });
 server.setMaxListeners(50);
+
+
+// Control Expired Keys
 setInterval( ()=> {
     memcached.removeKeysExpired(new Date().getTime())
         .then(data=>{

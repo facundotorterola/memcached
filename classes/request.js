@@ -4,15 +4,15 @@ class Request{
 
     constructor(command,key,flags,expiration_time,bytes,no_reply,cas_unique=0){
         if (STORAGE_COMMANDS.indexOf(command)===-1) {
-            throw new Error('CLIENT_ERROR header bad formed\r\nERROR\r\n');
+            throw new Error('CLIENT_ERROR header malformed\r\nERROR\r\n');
         }
 
         if (isNaN(flags) || isNaN(expiration_time) || isNaN(bytes) || isNaN(cas_unique) ) {
-            throw new Error('CLIENT_ERROR header bad formed\r\nERROR\r\n');
+            throw new Error('CLIENT_ERROR header malformed\r\nERROR\r\n');
         }
         
         if (bytes<0 || flags<0) {
-            throw new Error('CLIENT_ERROR header bad formed\r\nERROR\r\n');
+            throw new Error('CLIENT_ERROR header malformed\r\nERROR\r\n');
         }
 
         if (expiration_time===0) {
@@ -28,7 +28,6 @@ class Request{
         this.bytes=bytes;
         this.cas_unique=cas_unique;
         this.no_reply=no_reply;
-        this.created = new Date().getTime();
     }
     setValue(value){
         if (value.length === this.bytes){
@@ -39,7 +38,7 @@ class Request{
     }
     setCas(cas){
         if (isNaN(cas)) {
-            throw new Error('CLIENT_ERROR header bad formed\r\nERROR\r\n');
+            throw new Error('CLIENT_ERROR header malformed\r\nERROR\r\n');
         }else{
             this.cas_unique=cas;
         }
